@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'map_dashboard.dart';
 
 void main() {
-  runApp(const SafeWalkApp());
+  runApp(const MyApp());
 }
 
 class SafeWalkApp extends StatelessWidget {
@@ -19,8 +20,75 @@ class SafeWalkApp extends StatelessWidget {
         primaryColor: const Color(0xFF043464),
         fontFamily: 'Roboto',
       ),
-      home: const LoginScreen(),
+      home: const SessionGate(),
     );
+  }
+}
+
+class MyApp extends SafeWalkApp {
+  const MyApp({super.key});
+}
+
+class SessionGate extends StatefulWidget {
+  const SessionGate({super.key});
+
+  @override
+  State<SessionGate> createState() => _SessionGateState();
+}
+
+class _SessionGateState extends State<SessionGate> {
+  bool isLoading = true;
+  String? username;
+  String? role;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSession();
+  }
+
+  Future<void> _loadSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      username = prefs.getString('saved_username');
+      role = prefs.getString('saved_role') ?? 'User';
+      isLoading = false;
+    });
+  }
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('saved_username');
+    await prefs.remove('saved_role');
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF043464))),
+      );
+    }
+
+    if (username != null && username!.isNotEmpty) {
+      return MapDashboardScreen(
+        username: username!,
+        role: role ?? 'User',
+        onLogout: _logout,
+      );
+    }
+
+    return const LoginScreen();
   }
 }
 
@@ -38,6 +106,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
+
+  @override
+  void dispose() {
+    usernameController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,9 +182,30 @@ class _LoginScreenState extends State<LoginScreen> {
                                   final data = jsonDecode(response.body);
 
                                   if (data['status'] == 'success') {
+                                    final prefs = await SharedPreferences.getInstance();
+                                    await prefs.setString('saved_username', usernameController.text.trim());
+                                    await prefs.setString('saved_role', selectedRole);
+
                                     Navigator.pushReplacement(
                                       context,
-                                      MaterialPageRoute(builder: (context) => const MapDashboardScreen()),
+                                      MaterialPageRoute(
+                                        builder: (context) => MapDashboardScreen(
+                                          username: usernameController.text.trim(),
+                                          role: selectedRole,
+                                          onLogout: () async {
+                                            final prefs = await SharedPreferences.getInstance();
+                                            await prefs.remove('saved_username');
+                                            await prefs.remove('saved_role');
+                                            if (!context.mounted) {
+                                              return;
+                                            }
+                                            Navigator.of(context).pushAndRemoveUntil(
+                                              MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                              (route) => false,
+                                            );
+                                          },
+                                        ),
+                                      ),
                                     );
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -190,6 +286,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController locationController = TextEditingController();
   bool isLoading = false;
+
+  @override
+  void dispose() {
+    fullNameController.dispose();
+    phoneController.dispose();
+    usernameController.dispose();
+    passwordController.dispose();
+    locationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -1,156 +1,171 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
-import 'main.dart';
+
+import 'api_service.dart';
+import 'dashboard/dashboard_constants.dart';
+import 'dashboard/tabs/contacts_tab.dart';
+import 'dashboard/tabs/create_report_tab.dart';
+import 'dashboard/tabs/profile_tab.dart';
+import 'dashboard/tabs/reports_map_tab.dart';
 
 class MapDashboardScreen extends StatefulWidget {
-  const MapDashboardScreen({super.key});
+  const MapDashboardScreen({
+    super.key,
+    required this.username,
+    required this.role,
+    required this.onLogout,
+  });
+
+  final String username;
+  final String role;
+  final Future<void> Function() onLogout;
 
   @override
   State<MapDashboardScreen> createState() => _MapDashboardScreenState();
 }
 
 class _MapDashboardScreenState extends State<MapDashboardScreen> {
-  final Color darkNavyColor = const Color(0xFF043464);
-  final Color activeTabColor = const Color(0xFF064B85); // Slightly lighter blue for the active "MAP" tab
+  int _selectedIndex = 0;
+  late Future<List<Report>> _reportsFuture;
+  late Future<UserProfile> _profileFuture;
 
-  // Simulating the data fetched from your PHP database script ($db->getTodaysReports())
-  // Currently centered around Bacolod based on your image
-  final List<LatLng> reportLocations = [
-    const LatLng(10.6765, 122.9509), // Bacolod Center
-    const LatLng(10.6850, 122.9600), // Estefania area
-    const LatLng(10.6550, 122.9350), // Pahanocoy area
-    const LatLng(10.7300, 122.9700), // Talisay area
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _reportsFuture = ApiService.fetchReports();
+    _profileFuture = ApiService.fetchProfileByUsername(widget.username);
+  }
+
+  Future<void> _reloadReports() async {
+    setState(() {
+      _reportsFuture = ApiService.fetchReports();
+    });
+  }
+
+  Future<void> _reloadProfile() async {
+    setState(() {
+      _profileFuture = ApiService.fetchProfileByUsername(widget.username);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ==========================================
-      // TOP APP BAR
-      // ==========================================
+      backgroundColor: surfaceColor,
       appBar: AppBar(
-        backgroundColor: darkNavyColor,
-        automaticallyImplyLeading: false, // Hides the default back button
-        title: const Text(
-          'SafeWalk',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.w900,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Center(
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (Route<dynamic> route) => false,
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white, width: 1.0),
-                    borderRadius: BorderRadius.circular(2.0),
-                  ),
-                  child: const Text(
-                    'LOG OUT',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ),
+        backgroundColor: darkNavy,
+        automaticallyImplyLeading: false,
+        titleSpacing: 20,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'SafeWalk',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                fontStyle: FontStyle.italic,
               ),
             ),
-          )
-        ],
-      ),
-
-      // ==========================================
-      // MAP BODY (Replacing Leaflet.js)
-      // ==========================================
-      body: FlutterMap(
-        options: const MapOptions(
-          initialCenter: LatLng(10.6765, 122.9509), // Initial map center (Bacolod)
-          initialZoom: 12.5,
-        ),
-        children: [
-          // OpenStreetMap Tile Layer
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.safewalk.app', // Good practice for OSM
-          ),
-          // Markers Layer (Simulating the locations array from PHP)
-          MarkerLayer(
-            markers: reportLocations.map((location) {
-              return Marker(
-                point: location,
-                width: 20,
-                height: 20,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      )
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-
-      // ==========================================
-      // BOTTOM NAVIGATION BAR
-      // ==========================================
-      bottomNavigationBar: Container(
-        height: 50,
-        color: darkNavyColor,
-        child: Row(
-          children: [
-            _buildNavItem('MAP', isActive: true),
-            _buildNavItem('REPORT', isActive: false),
-            _buildNavItem('CONTACTS', isActive: false),
-            _buildNavItem('PROFILE', isActive: false),
+            Text(
+              '${widget.username} • ${widget.role}',
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await widget.onLogout();
+            },
+            child: const Text(
+              'LOG OUT',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          ReportsMapTab(reportsFuture: _reportsFuture),
+          CreateReportTab(
+            profileFuture: _profileFuture,
+            onReportSubmitted: _reloadReports,
+          ),
+          ContactsTab(profileFuture: _profileFuture),
+          ProfileTab(
+            profileFuture: _profileFuture,
+            onProfileUpdated: _reloadProfile,
+          ),
+        ],
+      ),
+      bottomNavigationBar: DashboardNavBar(
+        selectedIndex: _selectedIndex,
+        onItemSelected: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
     );
   }
+}
 
-  // Helper widget to build the bottom nav tabs matching your design
-  Widget _buildNavItem(String title, {required bool isActive}) {
+class DashboardNavBar extends StatelessWidget {
+  const DashboardNavBar({super.key, required this.selectedIndex, required this.onItemSelected});
+
+  final int selectedIndex;
+  final ValueChanged<int> onItemSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 64,
+      decoration: const BoxDecoration(color: darkNavy),
+      child: Row(
+        children: [
+          DashboardNavItem(label: 'MAP', isActive: selectedIndex == 0, onTap: () => onItemSelected(0)),
+          DashboardNavItem(label: 'REPORT', isActive: selectedIndex == 1, onTap: () => onItemSelected(1)),
+          DashboardNavItem(label: 'CONTACTS', isActive: selectedIndex == 2, onTap: () => onItemSelected(2)),
+          DashboardNavItem(label: 'PROFILE', isActive: selectedIndex == 3, onTap: () => onItemSelected(3)),
+        ],
+      ),
+    );
+  }
+}
+
+class DashboardNavItem extends StatelessWidget {
+  const DashboardNavItem({super.key, required this.label, required this.isActive, required this.onTap});
+
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          // TODO: Add navigation logic for the other tabs
-        },
+        onTap: onTap,
         child: Container(
           color: isActive ? activeTabColor : Colors.transparent,
           alignment: Alignment.center,
           child: Text(
-            title,
+            label,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
             ),
           ),
         ),
