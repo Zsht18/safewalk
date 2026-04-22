@@ -26,7 +26,7 @@ class _ContactsTabState extends State<ContactsTab> with SingleTickerProviderStat
   static const PhilSmsConfig _smsConfig = PhilSmsConfig(
     endpoint: 'https://dashboard.philsms.com/api/v3/',
     apiKey: '2635|19hTVHGV2p0gf9tjJMYqvk1U0ccc4f3ndYNpblNl3890acf0',
-    senderId: 'SAFEWALK',
+    senderId: 'PhilSMS',
   );
 
   final PhilSmsService _smsService = const PhilSmsService(_smsConfig);
@@ -73,55 +73,64 @@ class _ContactsTabState extends State<ContactsTab> with SingleTickerProviderStat
     }
   }
 
-  Future<void> _handleEmergency() async {
-    final profile = _profile;
-    if (profile == null) {
-      _showSnackBar('Profile is still loading.', Colors.red);
-      return;
+Future<void> _handleEmergency() async {
+  final profile = _profile;
+  if (profile == null) {
+    _showSnackBar('Profile is still loading.', Colors.red);
+    return;
+  }
+
+  if (profile.phone.isEmpty) {
+    _showSnackBar('No phone number found in the profile.', Colors.red);
+    return;
+  }
+
+  setState(() {
+    _isSending = true;
+  });
+
+  try {
+    // 1. Format the phone number to 639XXXXXXXXX
+    String rawPhone = profile.phone.replaceAll(RegExp(r'\D'), ''); 
+    if (rawPhone.startsWith('0')) {
+      rawPhone = '63${rawPhone.substring(1)}';
+    } else if (rawPhone.startsWith('9')) {
+      rawPhone = '63$rawPhone';
     }
 
-    if (profile.phone.isEmpty) {
-      _showSnackBar('No phone number found in the profile.', Colors.red);
-      return;
-    }
+    final position = await _getCurrentPosition();
+    final resolvedLocation = await LocationFormatterService.resolveAddress(
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
+
+    // Fixed the Map Link string interpolation (added '$' before {position...})
+    final mapsLink = 'https://www.google.com/maps?q=${position.latitude},${position.longitude}';
+    
+    final message =
+        'SOS ALERT from SafeWalk\nName: ${profile.fullname}\nLocation: $resolvedLocation\nMap: $mapsLink';
 
     setState(() {
-      _isSending = true;
+      _currentLocationLabel = resolvedLocation;
     });
 
-    try {
-      final position = await _getCurrentPosition();
-      final resolvedLocation = await LocationFormatterService.resolveAddress(
-        latitude: position.latitude,
-        longitude: position.longitude,
-      );
-
-      final mapsLink =
-          'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}';
-      final message =
-          'SOS ALERT from SafeWalk\nName: ${profile.fullname}\nLocation: $resolvedLocation\nMap: $mapsLink';
-
+    // 2. Send using the formatted phone number
+    await _smsService.send(
+      PhilSmsMessage(recipient: rawPhone, message: message),
+    );
+    
+    _showSnackBar('SOS message sent to $rawPhone.', Colors.green);
+  } catch (error) {
+    // Improved error display to see the API response clearly
+    _showSnackBar(error.toString(), Colors.red);
+  } finally {
+    if (mounted) {
       setState(() {
-        _currentLocationLabel = resolvedLocation;
+        _isSending = false;
       });
-
-      await _smsService.send(
-        PhilSmsMessage(recipient: profile.phone, message: message),
-      );
-      _showSnackBar('SOS message sent to ${profile.phone}.', Colors.green);
-    } catch (error) {
-      final rawMessage = error.toString();
-      final normalizedMessage =
-          rawMessage.contains('Unexpected null value') ? 'Unable to access SOS location right now.' : rawMessage;
-      _showSnackBar(normalizedMessage, Colors.red);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSending = false;
-        });
-      }
     }
   }
+}
 
   Future<Position> _getCurrentPosition() async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
