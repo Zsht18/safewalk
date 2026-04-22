@@ -212,6 +212,8 @@ void showReportSheet(BuildContext context, Report report) {
     context: context,
     backgroundColor: Colors.transparent,
     builder: (context) {
+      final maxSheetHeight = MediaQuery.sizeOf(context).height * 0.8;
+
       return Container(
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
         decoration: const BoxDecoration(
@@ -220,56 +222,61 @@ void showReportSheet(BuildContext context, Report report) {
         ),
         child: SafeArea(
           top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 54,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.black12,
-                    borderRadius: BorderRadius.circular(999),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxSheetHeight),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 54,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.black12,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Report Details',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: darkNavy,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ProfileField(label: 'FULLNAME', value: report.fullname),
+                  const SizedBox(height: 10),
+                  ProfileField(label: 'LOCATION', value: report.location),
+                  const SizedBox(height: 10),
+                  ProfileField(label: 'STATUS', value: report.status),
+                  const SizedBox(height: 10),
+                  ProfileField(label: 'DESCRIPTION', value: report.description),
+                  const SizedBox(height: 14),
+                  if (report.timestamp != null)
+                    Text(
+                      'Submitted: ${report.timestamp!.toLocal()}',
+                      style: const TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: darkNavy,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                    ),
+                    child: const Text(
+                      'CLOSE',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Report Details',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: darkNavy,
-                ),
-              ),
-              const SizedBox(height: 14),
-              ProfileField(label: 'FULLNAME', value: report.fullname),
-              const SizedBox(height: 10),
-              ProfileField(label: 'LOCATION', value: report.location),
-              const SizedBox(height: 10),
-              ProfileField(label: 'STATUS', value: report.status),
-              const SizedBox(height: 10),
-              ProfileField(label: 'DESCRIPTION', value: report.description),
-              const SizedBox(height: 14),
-              if (report.timestamp != null)
-                Text(
-                  'Submitted: ${report.timestamp!.toLocal()}',
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
-                ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: darkNavy,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                ),
-                child: const Text(
-                  'CLOSE',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       );

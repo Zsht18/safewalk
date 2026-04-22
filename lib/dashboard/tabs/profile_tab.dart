@@ -81,9 +81,12 @@ class _ProfileTabState extends State<ProfileTab> {
                 children: [
                   TextField(
                     controller: controller,
+                    readOnly: false,
+                    maxLines: 2,
                     decoration: const InputDecoration(
                       labelText: 'Location',
-                      hintText: 'City, street, province, zip',
+                      hintText: 'Street, Barangay, City, Province, Zipcode',
+                      border: OutlineInputBorder(),
                     ),
                     onChanged: (value) {
                       pendingLocation = value;

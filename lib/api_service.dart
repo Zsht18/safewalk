@@ -84,23 +84,44 @@ class ApiService {
   }
 
   static Future<List<Report>> fetchReports() async {
-    final response = await http.get(
-      _buildUri('/get_reports.php'),
-    ).timeout(const Duration(seconds: 15));
+    Future<List<Report>> requestReports() async {
+      final response = await http.get(
+        _buildUri('/get_reports.php', {
+          't': DateTime.now().millisecondsSinceEpoch.toString(),
+        }),
+        headers: const {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 15));
 
-    final dynamic decoded = jsonDecode(response.body);
-    if (response.statusCode == 200 && decoded is List) {
-      return decoded
-          .whereType<Map<String, dynamic>>()
-          .map(Report.fromJson)
-          .toList();
+      final dynamic decoded = jsonDecode(response.body);
+      if (response.statusCode == 200 && decoded is List) {
+        return decoded
+            .whereType<Map<String, dynamic>>()
+            .map(Report.fromJson)
+            .toList();
+      }
+
+      if (decoded is Map<String, dynamic>) {
+        throw Exception(decoded['message']?.toString() ?? 'Unable to load reports.');
+      }
+
+      throw Exception('Unable to load reports.');
     }
 
-    if (decoded is Map<String, dynamic>) {
-      throw Exception(decoded['message']?.toString() ?? 'Unable to load reports.');
+    try {
+      return await requestReports();
+    } catch (_) {
+      try {
+        return await requestReports();
+      } catch (error) {
+        final rawMessage = error.toString();
+        if (rawMessage.contains('Failed to fetch')) {
+          throw Exception(
+            'Unable to reach the reports server right now. Please check your internet and tap Retry.',
+          );
+        }
+        rethrow;
+      }
     }
-
-    throw Exception('Unable to load reports.');
   }
 
   static Future<Map<String, dynamic>> submitReport({

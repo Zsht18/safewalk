@@ -39,8 +39,7 @@ if ($data && isset($data->username) && isset($data->password)) {
     $username = $conn->real_escape_string($data->username);
     $password = $data->password;
 
-    // REPLACE 'admin' WITH YOUR ACTUAL TABLE NAME IF IT IS DIFFERENT
-    $sql = "SELECT * FROM admin WHERE username = '$username'";
+    $sql = "SELECT * FROM admins WHERE username = '$username'";
     $result = $conn->query($sql);
 
     if ($result->num_rows > 0) {

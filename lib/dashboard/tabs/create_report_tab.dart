@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../api_service.dart';
@@ -61,7 +62,14 @@ class _CreateReportTabState extends State<CreateReportTab> {
       }
       setState(() {
         _fullnameController.text = profile.fullname;
-        _locationController.text = profile.location;
+      });
+
+      await _prefillWithCurrentLocation(fallbackAddress: profile.location);
+
+      if (!mounted) {
+        return;
+      }
+      setState(() {
         _profileLoaded = true;
       });
     } catch (_) {
@@ -71,6 +79,51 @@ class _CreateReportTabState extends State<CreateReportTab> {
       setState(() {
         _profileLoaded = true;
       });
+    }
+  }
+
+  Future<void> _prefillWithCurrentLocation({String? fallbackAddress}) async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception('Location services are disabled.');
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        throw Exception('Location permission not granted.');
+      }
+
+      final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      final point = LatLng(position.latitude, position.longitude);
+      final resolved = await LocationFormatterService.resolveAddress(
+        latitude: point.latitude,
+        longitude: point.longitude,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _selectedPoint = point;
+        _locationController.text = resolved;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      final fallback = fallbackAddress?.trim() ?? '';
+      if (fallback.isNotEmpty && _locationController.text.trim().isEmpty) {
+        setState(() {
+          _locationController.text = fallback;
+        });
+      }
     }
   }
 

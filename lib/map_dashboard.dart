@@ -11,12 +11,10 @@ class MapDashboardScreen extends StatefulWidget {
   const MapDashboardScreen({
     super.key,
     required this.username,
-    required this.role,
     required this.onLogout,
   });
 
   final String username;
-  final String role;
   final Future<void> Function() onLogout;
 
   @override
@@ -68,7 +66,7 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
               ),
             ),
             Text(
-              '${widget.username} • ${widget.role}',
+              widget.username,
               style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 11,
@@ -97,7 +95,10 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          ReportsMapTab(reportsFuture: _reportsFuture),
+          ReportsMapTab(
+            reportsFuture: _reportsFuture,
+            onRetry: _reloadReports,
+          ),
           CreateReportTab(
             profileFuture: _profileFuture,
             onReportSubmitted: _reloadReports,

@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeWalk Admin</title>
+  <style>
+    :root {
+      --navy: #0b3358;
+      --sky: #f2f7fc;
+      --ink: #0f1720;
+      --muted: #5f6b7a;
+      --card: #ffffff;
+      --ok: #147a48;
+      --danger: #b63b3b;
+      --line: #d9e3ef;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at top right, #dbe9f8 0%, #f7fbff 40%, #eef5fc 100%);
+    }
+
+    header {
+      background: linear-gradient(135deg, #032746 0%, #0b3f6c 100%);
+      color: white;
+      padding: 18px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: .3px;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 18px auto;
+      padding: 0 14px 24px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 6px 16px rgba(10, 32, 58, .08);
+    }
+
+    .hidden { display: none !important; }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    input, select, button, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #c9d6e6;
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      font-weight: 700;
+      background: var(--navy);
+      color: white;
+    }
+
+    button.secondary {
+      background: #e9f1fa;
+      color: #16385f;
+      border: 1px solid #bed0e4;
+    }
+
+    button.warn { background: var(--danger); }
+    button.ok { background: var(--ok); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 13px;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 1px solid #edf3fa;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f3f8ff;
+      color: #24496d;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .inline-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .status {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 20px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    @media (min-width: 980px) {
+      .grid-2 { grid-template-columns: 1.2fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>SafeWalk Admin Panel</h1>
+    <button id="logoutBtn" class="secondary hidden" type="button">Logout</button>
+  </header>
+
+  <main>
+    <section id="loginCard" class="card">
+      <h2 style="margin:0 0 8px;">Admin Login</h2>
+      <div class="row">
+        <input id="adminUsername" placeholder="Admin username" />
+        <input id="adminPassword" type="password" placeholder="Admin password" />
+        <button id="loginBtn" type="button">Login</button>
+      </div>
+      <div id="loginStatus" class="status"></div>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <div class="grid-2">
+        <section class="card">
+          <div class="toolbar">
+            <h2 style="margin:0;">Reports</h2>
+            <button id="reloadReportsBtn" class="secondary" type="button">Reload Reports</button>
+          </div>
+          <div id="reportsStatus" class="status"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Fullname</th>
+                <th>Location</th>
+                <th>Report</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="reportsBody"></tbody>
+          </table>
+        </section>
+
+        <section class="card">
+          <div class="toolbar">
+            <h2 style="margin:0;">Users</h2>
+            <button id="reloadUsersBtn" class="secondary" type="button">Reload Users</button>
+          </div>
+
+          <div class="row">
+            <input id="userId" placeholder="ID (for update/delete)" />
+            <input id="fullName" placeholder="Fullname" />
+            <input id="username" placeholder="Username" />
+            <input id="password" placeholder="Password" />
+            <input id="phone" placeholder="Phone" />
+            <input id="location" placeholder="Location" />
+          </div>
+
+          <div class="row">
+            <button id="createUserBtn" class="ok" type="button">Create User</button>
+            <button id="updateUserBtn" type="button">Update User</button>
+            <button id="deleteUserBtn" class="warn" type="button">Delete User</button>
+          </div>
+
+          <div id="usersStatus" class="status"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Fullname</th>
+                <th>Username</th>
+                <th>Phone</th>
+                <th>Location</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = 'https://safewalk.uslsbsit.com';
+
+    const loginCard = document.getElementById('loginCard');
+    const dashboard = document.getElementById('dashboard');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    const loginStatus = document.getElementById('loginStatus');
+    const reportsStatus = document.getElementById('reportsStatus');
+    const usersStatus = document.getElementById('usersStatus');
+
+    const reportsBody = document.getElementById('reportsBody');
+    const usersBody = document.getElementById('usersBody');
+
+    const userIdInput = document.getElementById('userId');
+    const fullNameInput = document.getElementById('fullName');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const phoneInput = document.getElementById('phone');
+    const locationInput = document.getElementById('location');
+
+    const state = { loggedIn: false };
+
+    function setStatus(el, msg, ok = true) {
+      el.textContent = msg;
+      el.style.color = ok ? '#147a48' : '#b63b3b';
+    }
+
+    async function request(path, options = {}) {
+      const res = await fetch(`${API_BASE}/${path}`, {
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.status === 'error') {
+        throw new Error(data.message || `Request failed (${res.status})`);
+      }
+      return data;
+    }
+
+    function setAuthenticatedUI(authed) {
+      state.loggedIn = authed;
+      loginCard.classList.toggle('hidden', authed);
+      dashboard.classList.toggle('hidden', !authed);
+      logoutBtn.classList.toggle('hidden', !authed);
+    }
+
+    async function loginAdmin() {
+      try {
+        const username = document.getElementById('adminUsername').value.trim();
+        const password = document.getElementById('adminPassword').value;
+        if (!username || !password) {
+          setStatus(loginStatus, 'Username and password are required.', false);
+          return;
+        }
+
+        await request('admin_login.php', {
+          method: 'POST',
+          body: JSON.stringify({ username, password }),
+        });
+
+        setStatus(loginStatus, 'Admin login successful.');
+        setAuthenticatedUI(true);
+        await Promise.all([loadReports(), loadUsers()]);
+      } catch (err) {
+        setStatus(loginStatus, err.message, false);
+      }
+    }
+
+    async function loadReports() {
+      reportsBody.innerHTML = '';
+      setStatus(reportsStatus, 'Loading reports...');
+      try {
+        const res = await request('admin_reports.php');
+        const reports = Array.isArray(res.data) ? res.data : [];
+
+        if (!reports.length) {
+          reportsBody.innerHTML = '<tr><td colspan="6">No reports found.</td></tr>';
+        } else {
+          reports.forEach((report) => {
+            const tr = document.createElement('tr');
+            const id = report.id ?? '';
+            const status = report.status || 'pending';
+            tr.innerHTML = `
+              <td>${id}</td>
+              <td>${report.fullname || ''}</td>
+              <td>${report.location || ''}</td>
+              <td>${report.report || ''}</td>
+              <td>
+                <select data-id="${id}" class="report-status">
+                  <option ${status === 'pending' ? 'selected' : ''}>pending</option>
+                  <option ${status === 'on-going' ? 'selected' : ''}>on-going</option>
+                  <option ${status === 'resolved' ? 'selected' : ''}>resolved</option>
+                </select>
+              </td>
+              <td>
+                <div class="inline-actions">
+                  <button type="button" data-id="${id}" class="save-status">Save</button>
+                  <button type="button" data-id="${id}" class="warn delete-report">Delete</button>
+                </div>
+              </td>
+            `;
+            reportsBody.appendChild(tr);
+          });
+        }
+
+        setStatus(reportsStatus, `Loaded ${reports.length} report(s).`);
+      } catch (err) {
+        setStatus(reportsStatus, err.message, false);
+      }
+    }
+
+    async function updateReportStatus(id, status) {
+      try {
+        await request('admin_reports.php', {
+          method: 'POST',
+          body: JSON.stringify({ action: 'update_status', id, status }),
+        });
+        setStatus(reportsStatus, `Report #${id} status updated.`);
+      } catch (err) {
+        setStatus(reportsStatus, err.message, false);
+      }
+    }
+
+    async function deleteReport(id) {
+      if (!confirm(`Delete report #${id}?`)) return;
+      try {
+        await request('admin_reports.php', {
+          method: 'POST',
+          body: JSON.stringify({ action: 'delete_report', id }),
+        });
+        setStatus(reportsStatus, `Report #${id} deleted.`);
+        await loadReports();
+      } catch (err) {
+        setStatus(reportsStatus, err.message, false);
+      }
+    }
+
+    function userPayload() {
+      return {
+        id: Number(userIdInput.value || 0),
+        fullname: fullNameInput.value.trim(),
+        username: usernameInput.value.trim(),
+        password: passwordInput.value,
+        phone: phoneInput.value.trim(),
+        location: locationInput.value.trim(),
+      };
+    }
+
+    async function loadUsers() {
+      usersBody.innerHTML = '';
+      setStatus(usersStatus, 'Loading users...');
+      try {
+        const res = await request('admin_users.php');
+        const users = Array.isArray(res.data) ? res.data : [];
+
+        if (!users.length) {
+          usersBody.innerHTML = '<tr><td colspan="5">No users found.</td></tr>';
+        } else {
+          users.forEach((user) => {
+            const tr = document.createElement('tr');
+            const phone = user.number || user.phone || '';
+            tr.innerHTML = `
+              <td>${user.id ?? ''}</td>
+              <td>${user.fullname || ''}</td>
+              <td>${user.username || ''}</td>
+              <td>${phone}</td>
+              <td>${user.location || ''}</td>
+            `;
+            usersBody.appendChild(tr);
+          });
+        }
+
+        setStatus(usersStatus, `Loaded ${users.length} user(s).`);
+      } catch (err) {
+        setStatus(usersStatus, err.message, false);
+      }
+    }
+
+    async function createUser() {
+      try {
+        const payload = userPayload();
+        await request('admin_users.php', {
+          method: 'POST',
+          body: JSON.stringify({ action: 'create_user', ...payload }),
+        });
+        setStatus(usersStatus, 'User created.');
+        await loadUsers();
+      } catch (err) {
+        setStatus(usersStatus, err.message, false);
+      }
+    }
+
+    async function updateUser() {
+      try {
+        const payload = userPayload();
+        if (!payload.id) {
+          setStatus(usersStatus, 'User ID is required for update.', false);
+          return;
+        }
+
+        await request('admin_users.php', {
+          method: 'POST',
+          body: JSON.stringify({ action: 'update_user', ...payload }),
+        });
+        setStatus(usersStatus, `User #${payload.id} updated.`);
+        await loadUsers();
+      } catch (err) {
+        setStatus(usersStatus, err.message, false);
+      }
+    }
+
+    async function deleteUser() {
+      try {
+        const id = Number(userIdInput.value || 0);
+        if (!id) {
+          setStatus(usersStatus, 'User ID is required for delete.', false);
+          return;
+        }
+        if (!confirm(`Delete user #${id}?`)) return;
+
+        await request('admin_users.php', {
+          method: 'POST',
+          body: JSON.stringify({ action: 'delete_user', id }),
+        });
+        setStatus(usersStatus, `User #${id} deleted.`);
+        await loadUsers();
+      } catch (err) {
+        setStatus(usersStatus, err.message, false);
+      }
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', loginAdmin);
+    document.getElementById('reloadReportsBtn').addEventListener('click', loadReports);
+    document.getElementById('reloadUsersBtn').addEventListener('click', loadUsers);
+    document.getElementById('createUserBtn').addEventListener('click', createUser);
+    document.getElementById('updateUserBtn').addEventListener('click', updateUser);
+    document.getElementById('deleteUserBtn').addEventListener('click', deleteUser);
+
+    reportsBody.addEventListener('click', async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      if (target.classList.contains('save-status')) {
+        const id = Number(target.getAttribute('data-id'));
+        const select = document.querySelector(`select.report-status[data-id="${id}"]`);
+        if (!(select instanceof HTMLSelectElement)) return;
+        await updateReportStatus(id, select.value);
+      }
+
+      if (target.classList.contains('delete-report')) {
+        const id = Number(target.getAttribute('data-id'));
+        await deleteReport(id);
+      }
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      setAuthenticatedUI(false);
+      setStatus(loginStatus, 'Logged out.');
+    });
+  </script>
+</body>
+</html>

@@ -39,7 +39,6 @@ class SessionGate extends StatefulWidget {
 class _SessionGateState extends State<SessionGate> {
   bool isLoading = true;
   String? username;
-  String? role;
 
   @override
   void initState() {
@@ -54,7 +53,6 @@ class _SessionGateState extends State<SessionGate> {
     }
     setState(() {
       username = prefs.getString('saved_username');
-      role = prefs.getString('saved_role') ?? 'User';
       isLoading = false;
     });
   }
@@ -62,7 +60,6 @@ class _SessionGateState extends State<SessionGate> {
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('saved_username');
-    await prefs.remove('saved_role');
     if (!mounted) {
       return;
     }
@@ -83,7 +80,6 @@ class _SessionGateState extends State<SessionGate> {
     if (username != null && username!.isNotEmpty) {
       return MapDashboardScreen(
         username: username!,
-        role: role ?? 'User',
         onLogout: _logout,
       );
     }
@@ -101,8 +97,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  String selectedRole = 'User';
-  
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
@@ -155,10 +149,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       _buildLabel('PASSWORD'),
                       const SizedBox(height: 6),
                       _buildTextField(obscureText: true, controller: passwordController),
-                      const SizedBox(height: 18),
-                      _buildLabel('ROLE'),
-                      const SizedBox(height: 6),
-                      _buildDropdown(),
                       const SizedBox(height: 40),
                       Center(
                         child: isLoading 
@@ -171,8 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Uri.parse('https://safewalk.uslsbsit.com/login.php'),
                                     body: jsonEncode({
                                       "username": usernameController.text,
-                                      "password": passwordController.text,
-                                      "role": selectedRole
+                                      "password": passwordController.text
                                     }),
                                     headers: {"Content-Type": "application/json"}
                                   );
@@ -184,18 +173,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                   if (data['status'] == 'success') {
                                     final prefs = await SharedPreferences.getInstance();
                                     await prefs.setString('saved_username', usernameController.text.trim());
-                                    await prefs.setString('saved_role', selectedRole);
 
                                     Navigator.pushReplacement(
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) => MapDashboardScreen(
                                           username: usernameController.text.trim(),
-                                          role: selectedRole,
                                           onLogout: () async {
                                             final prefs = await SharedPreferences.getInstance();
                                             await prefs.remove('saved_username');
-                                            await prefs.remove('saved_role');
                                             if (!context.mounted) {
                                               return;
                                             }
@@ -238,34 +224,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildDropdown() {
-    return Container(
-      height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(4.0),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: selectedRole,
-          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54, size: 20),
-          isExpanded: true,
-          style: const TextStyle(color: Colors.black87, fontSize: 14),
-          onChanged: (String? newValue) {
-            setState(() {
-              selectedRole = newValue!;
-            });
-          },
-          items: <String>['User', 'Admin']
-              .map<DropdownMenuItem<String>>((String value) {
-            return DropdownMenuItem<String>(value: value, child: Text(value));
-          }).toList(),
-        ),
       ),
     );
   }

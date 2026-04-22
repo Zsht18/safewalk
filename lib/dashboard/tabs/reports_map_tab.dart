@@ -10,9 +10,14 @@ import '../dashboard_constants.dart';
 import '../dashboard_widgets.dart';
 
 class ReportsMapTab extends StatefulWidget {
-  const ReportsMapTab({super.key, required this.reportsFuture});
+  const ReportsMapTab({
+    super.key,
+    required this.reportsFuture,
+    required this.onRetry,
+  });
 
   final Future<List<Report>> reportsFuture;
+  final Future<void> Function() onRetry;
 
   @override
   State<ReportsMapTab> createState() => _ReportsMapTabState();
@@ -125,10 +130,50 @@ class _ReportsMapTabState extends State<ReportsMapTab> {
         }
 
         if (snapshot.hasError) {
-          return StatusPanel(
-            title: 'Unable to load reports',
-            message: snapshot.error.toString(),
-            icon: Icons.error_outline,
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: FormPanel(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, size: 42, color: darkNavy),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Unable to load reports',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: darkNavy,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      snapshot.error.toString(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 12, color: Colors.black54, height: 1.4),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: widget.onRetry,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: darkNavy,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                        ),
+                        icon: const Icon(Icons.refresh, color: Colors.white),
+                        label: const Text(
+                          'RETRY',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           );
         }
 
